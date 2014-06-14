@@ -49,4 +49,11 @@
                 :output-to "examples/chart-http/chart_http.js"
                 :output-dir "examples/chart-http/out"
                 :source-map true
-                :optimizations :none}}]})
+                :optimizations :none}}
+             {:id "simple-map"
+              :source-paths ["examples/simple-map/src"]
+              :compiler {
+                         :output-to "examples/simple-map/simple_map.js"
+                         :output-dir "examples/simple-map/out"
+                         :source-map true
+                         :optimizations :none}}]})

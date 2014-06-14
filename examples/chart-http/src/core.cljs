@@ -4,7 +4,7 @@
             [om.core :as om  :include-macros true]
             [om.dom  :as dom :include-macros true]
             [cljs.core.async :refer [<! chan put! sliding-buffer]]
-            [ajax.core :refer (GET POST)]))
+            [ajax.core :refer (GET)]))
 
 (enable-console-print!)
 (def dimple (this-as ct (aget ct "dimple")))

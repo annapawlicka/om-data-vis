@@ -1,0 +1,57 @@
+/* layout */
+
+#map {
+    position: absolute;
+    top: 0px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+#panel
+{
+    background: white;
+    opacity: 0.9;
+    padding: 6px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+    border-radius: 4px;
+}
+
+#panel {
+    position: fixed;
+    top: 20px;
+    right: 10px;
+    z-index: 999
+}
+
+.my-legend ul {
+    list-style: none;
+    margin: 0;
+    margin-bottom: 5px;
+    padding: 0;
+}
+    
+.my-legend-label {
+    font-size: 80%;
+    border: 0;
+    list-style: none;
+    margin-left: 0;
+    line-height: 16px;
+    margin-bottom: 2px;
+}
+    
+.my-legend-icon {
+    display: inline-block;
+    height: 18px;
+    margin-right: 5px;
+    margin-left: 0;
+    width: 15%;
+    border: 1px solid #999;
+}
+
+.leaflet-marker-icon {
+   z-index: 998;
+}
+
+.leaflet-marker-pane  { z-index: 997; }
+.leaflet-popup-pane   { z-index: 996; }

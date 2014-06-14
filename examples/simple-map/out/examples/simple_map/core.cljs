@@ -3,7 +3,8 @@
   (:require [om.core :as om  :include-macros true]
             [om.dom  :as dom :include-macros true]
             [cljs.core.async :refer [<! chan put! sliding-buffer]]
-            [ajax.core :refer (GET)]))
+            [ajax.core :refer (GET)]
+            [clojure.string :as string]))
 
 (enable-console-print!)
 
@@ -34,13 +35,46 @@
     (.addTo tiles m)
     {:leaflet-map m}))
 
+(defn pan-to-postcode [cursor owner]
+  (let [postcode (.toUpperCase (string/replace (om/get-state owner :postcode) #"[\s]+" ""))]
+    (GET (str "http://maps.googleapis.com/maps/api/geocode/json?address=" postcode)
+        {:handler (fn [body]
+                    (let [map    (:leaflet-map @cursor)
+                          latlng (-> body (get-in ["results"]) first (get-in ["geometry"]) (get-in ["location"]))]
+                      (.panTo map (clj->js {:lat (js/parseFloat (get-in latlng ["lat"]))
+                                            :lng (js/parseFloat (get-in latlng ["lng"]))}))))})))
+
+(defn postcode-selector-component
+  [cursor owner]
+  (reify
+    om/IInitState
+    (init-state [_]
+      {:in (chan (sliding-buffer 1))
+       :out (chan (sliding-buffer 1))
+       :initialPostCode "30-302 Krakow"})
+    om/IWillMount
+    (will-mount [_]
+      (om/set-state! owner :postcode (om/get-state owner :initialPostCode)))
+    om/IRenderState
+    (render-state [_ state]
+      (dom/div nil
+               (dom/h2 nil "Zoom to postcode")
+               (dom/input #js {:type "text"
+                               :defaultValue (:initialPostCode state)
+                               :onChange (fn [e]
+                                           (om/set-state! owner :postcode (.-value (.-target e))))
+                               :onKeyPress (fn [e] (when (= (.-keyCode e) 13)
+                                       (pan-to-postcode cursor owner)))})
+               (dom/button #js {:onClick (fn [_] (pan-to-postcode cursor owner))} "Go")))))
+
 (defn panel-component
   [cursor owner]
   (om/component
    (dom/div nil
             (dom/h1 nil "Leaflet Map")
             (dom/div #js {:id "panel"}
-                     (om/build legend-component cursor)))))
+                     (om/build legend-component cursor)
+                     (om/build postcode-selector-component cursor)))))
 
 (defn drop-pin 
   "Drop pin on click and removes it when it's clicked again."

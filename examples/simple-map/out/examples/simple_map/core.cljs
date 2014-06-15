@@ -10,17 +10,11 @@
 
 (def app-model
   (atom
-   {:legend {:title nil}
-    :leaflet-map nil                   
+   {:leaflet-map nil
+    :coordinates nil
     :map {:lat 50.06297958283694 :lng 19.94705200195313}}))
 
 (def tile-url "http://{s}.tile.osm.org/{z}/{x}/{y}.png")
-
-(defn legend-component [data owner]
-  (om/component
-   (let [labels (-> data :data)
-         title  (-> data :title)]
-     (dom/div #js {:className "my-legend"}))))
 
 (defn create-map
   [cursor id]
@@ -35,6 +29,18 @@
     (.addTo tiles m)
     {:leaflet-map m}))
 
+(defn coordinates-component [cursor owner]
+  (om/component
+   (let [labels (-> data :data)
+         title  (-> data :title)]
+     (dom/section nil
+                  (dom/h3 nil "Coordinates")
+                  (dom/p nil "(Click anywhere on a map)")
+                  (when cursor
+                    (dom/div nil
+                             (dom/label nil (str "Lat: " (.-lat cursor)))
+                             (dom/label nil (str "Lng: " (.-lng cursor)))))))))
+
 (defn pan-to-postcode [cursor owner]
   (let [postcode (.toUpperCase (string/replace (om/get-state owner :postcode) #"[\s]+" ""))]
     (GET (str "http://maps.googleapis.com/maps/api/geocode/json?address=" postcode)
@@ -44,7 +50,7 @@
                       (.panTo map (clj->js {:lat (js/parseFloat (get-in latlng ["lat"]))
                                             :lng (js/parseFloat (get-in latlng ["lng"]))}))))})))
 
-(defn postcode-selector-component
+(defn postcode-component
   [cursor owner]
   (reify
     om/IInitState
@@ -57,30 +63,29 @@
       (om/set-state! owner :postcode (om/get-state owner :initialPostCode)))
     om/IRenderState
     (render-state [_ state]
-      (dom/div nil
-               (dom/h2 nil "Zoom to postcode")
-               (dom/input #js {:type "text"
-                               :defaultValue (:initialPostCode state)
-                               :onChange (fn [e]
-                                           (om/set-state! owner :postcode (.-value (.-target e))))
-                               :onKeyPress (fn [e] (when (= (.-keyCode e) 13)
-                                       (pan-to-postcode cursor owner)))})
-               (dom/button #js {:onClick (fn [_] (pan-to-postcode cursor owner))} "Go")))))
+      (dom/section nil
+                   (dom/h3 nil "Zoom to postcode")
+                   (dom/input #js {:type "text"
+                                   :defaultValue (:initialPostCode state)
+                                   :onChange (fn [e]
+                                               (om/set-state! owner :postcode (.-value (.-target e))))
+                                   :onKeyPress (fn [e] (when (= (.-keyCode e) 13)
+                                                         (pan-to-postcode cursor owner)))})
+                   (dom/button #js {:onClick (fn [_] (pan-to-postcode cursor owner))} "Go")))))
 
 (defn panel-component
   [cursor owner]
   (om/component
-   (dom/div nil
-            (dom/h1 nil "Leaflet Map")
-            (dom/div #js {:id "panel"}
-                     (om/build legend-component cursor)
-                     (om/build postcode-selector-component cursor)))))
+   (dom/div nil        
+            (om/build postcode-component cursor)
+            (om/build coordinates-component (:coordinates cursor)))))
 
 (defn drop-pin 
   "Drop pin on click and removes it when it's clicked again."
-  [map latlng]
+  [cursor map latlng]
   (let [marker (-> (.addTo (.marker js/L (clj->js latlng)) map))]
-      (.on marker "click" (fn [e] (.removeLayer map marker)))))
+    (om/update! cursor [:coordinates] latlng)
+    (.on marker "click" (fn [e] (.removeLayer map marker)))))
 
 (defn map-component
   [cursor owner]
@@ -96,11 +101,7 @@
                  :lat (get-in cursor [:map :lat])}]
         (.on leaflet-map "click" (fn [e]
                                    (let [latlng (.-latlng e)]
-                                     (drop-pin leaflet-map latlng))))
-        (.on leaflet-map "moveend" (fn [e]
-                                     (let [center (.getCenter leaflet-map)]
-                                       (om/update! cursor [:map :lng] (.-lng center))
-                                       (om/update! cursor [:map :lat] (.-lat center)))))
+                                     (drop-pin cursor leaflet-map latlng))))
         (.panTo leaflet-map (clj->js loc))
         (om/set-state! owner :map map)
         (om/update! cursor :leaflet-map leaflet-map)))

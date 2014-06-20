@@ -9,7 +9,7 @@
   :source-paths  ["src"]
   :ring {:handler om-data-vis.handler/app}
 
-  :dependencies [[org.clojure/clojure "1.5.1"]
+  :dependencies [[org.clojure/clojure "1.6.0"]
                  [org.clojure/clojurescript "0.0-2227" :scope "provided"]
 
                  ;; Om components
@@ -25,6 +25,8 @@
 
                  ;; Database
                  [cc.qbits/alia "2.0.0-rc3"]
+
+                 [org.clojure/tools.reader "0.8.3"]
                  ]
 
   :plugins [[lein-cljsbuild "1.0.4-SNAPSHOT"]
@@ -56,4 +58,11 @@
                          :output-to "examples/simple-map/simple_map.js"
                          :output-dir "examples/simple-map/out"
                          :source-map true
-                         :optimizations :none}}]})
+                         :optimizations :none}}
+              {:id "lastfm-chart"
+               :source-paths ["examples/lastfm-chart/src"]
+               :compiler {
+                          :output-to "examples/lastfm-chart/lastfm_chart.js"
+                          :output-dir "examples/lastfm-chart/out"
+                          :source-map true
+                          :optimizations :none}}]})

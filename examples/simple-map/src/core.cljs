@@ -31,15 +31,13 @@
 
 (defn coordinates-component [cursor owner]
   (om/component
-   (let [labels (-> data :data)
-         title  (-> data :title)]
-     (dom/section nil
-                  (dom/h3 nil "Coordinates")
-                  (dom/p nil "(Click anywhere on a map)")
-                  (when cursor
-                    (dom/div nil
-                             (dom/label nil (str "Lat: " (.-lat cursor)))
-                             (dom/label nil (str "Lng: " (.-lng cursor)))))))))
+   (dom/section nil
+                (dom/h3 nil "Coordinates")
+                (dom/p nil "(Click anywhere on a map)")
+                (when cursor
+                  (dom/div nil
+                           (dom/label nil (str "Lat: " (.-lat cursor)))
+                           (dom/label nil (str "Lng: " (.-lng cursor))))))))
 
 (defn pan-to-postcode [cursor owner]
   (let [postcode (.toUpperCase (string/replace (om/get-state owner :postcode) #"[\s]+" ""))]
@@ -55,9 +53,7 @@
   (reify
     om/IInitState
     (init-state [_]
-      {:in (chan (sliding-buffer 1))
-       :out (chan (sliding-buffer 1))
-       :initialPostCode "30-302 Krakow"})
+      {:initialPostCode "30-302 Krakow"})
     om/IWillMount
     (will-mount [_]
       (om/set-state! owner :postcode (om/get-state owner :initialPostCode)))
@@ -66,7 +62,7 @@
       (dom/section nil
                    (dom/h3 nil "Zoom to postcode")
                    (dom/input #js {:type "text"
-                                   :defaultValue (:initialPostCode state)
+                                   :defaultValue  (:initialPostCode state)
                                    :onChange (fn [e]
                                                (om/set-state! owner :postcode (.-value (.-target e))))
                                    :onKeyPress (fn [e] (when (= (.-keyCode e) 13)
@@ -103,12 +99,7 @@
                                    (let [latlng (.-latlng e)]
                                      (drop-pin cursor leaflet-map latlng))))
         (.panTo leaflet-map (clj->js loc))
-        (om/set-state! owner :map map)
-        (om/update! cursor :leaflet-map leaflet-map)))
-    om/IDidUpdate
-    (did-update [this prev-props prev-state]
-      (let [node (om/get-node owner)
-            {:keys [leaflet-map] :as map} (om/get-state owner :map)]))))
+        (om/update! cursor :leaflet-map leaflet-map)))))
 
 
 (om/root map-component app-model {:target (. js/document (getElementById "app"))})

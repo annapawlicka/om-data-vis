@@ -3,9 +3,16 @@ pom.xml.asc
 *jar
 /lib/
 /classes/
+/examples/simple-chart/out/
+/examples/simple-map/out/
+/examples/chart-http/out/
+/examples/lastfm-chart/out/
 /target/
 /checkouts/
 .lein-deps-sum
 .lein-repl-history
 .lein-plugins/
 .lein-failures
+.DS_Store
+.DS_Store?
+/examples/lastfm-chart/src/api.cljs

@@ -12,13 +12,12 @@
 
 (def app-model
  (atom {:username-box {:username ""}
-        :chart {:artists []}}))
+        :chart {:data []}}))
 
 (defn get-all-artists [cursor owner username]
   (let [api-root (:api-root (om/get-shared owner))
-        api-key  api-key
         url      (str api-root "?method=user.gettopartists&user=" username "&api_key=" api-key "&format=json")]
-    (GET url {:handler #(om/update! cursor [:artists] (get-in % ["topartists" "artist"]))})))
+    (GET url {:handler #(om/update! cursor [:data] (get-in % ["topartists" "artist"]))})))
 
 (defn username-box [cursor owner]
   (reify
@@ -29,7 +28,7 @@
     (will-mount [_]
       (om/set-state! owner :username (om/get-state owner :initialUsername)))
     om/IRenderState
-    (render-state [_ {:keys [state typed username]}]
+    (render-state [_ {:keys [state event-chan username]}]
       (prn "state: " state username)
       (dom/div nil
                (dom/input #js {:type "text"
@@ -38,35 +37,34 @@
                                :onKeyPress (fn [e] (when (= (.-keyCode e) 13)
                                                      (let [username (om/get-state owner :username)]
                                                           (om/update! cursor [:username] username)
-                                                          (put! typed {:username username}))))})
+                                                          (put! event-chan username))))})
                (dom/button #js {:onClick (fn [e] 
-                                           (put! typed {:username (om/get-state owner :username)}))} "Go")))))
+                                           (put! event-chan (om/get-state owner :username)))} "Go")))))
 
 ;;;;;;;;;;;;; Component 2: Chart ;;;;;;;;;;;;;;;;
 
-(defn- draw-chart [cursor]
+(defn- draw-chart [cursor {:keys [div bounds x-axis y-axis plot]}]
   (let [Chart        (.-chart js/dimple)
-        svg          (.newSvg js/dimple "#chart" "100%" 600)
-        selected     (get-in cursor [:username])
-        data         (get-in cursor [:artists])
-        dimple-chart (.setBounds (Chart. svg) "5%" "15%" "80%" "50%")
-        x            (.addCategoryAxis dimple-chart "x" "name")
-        y            (.addMeasureAxis dimple-chart "y" "playcount")
-        s            (.addSeries dimple-chart nil js/dimple.plot.bar (clj->js [x y]))]
+        svg          (.newSvg js/dimple (:name div) (:width div) (:height div))
+        data         (get-in cursor [:data])
+        dimple-chart (.setBounds (Chart. svg) (:x bounds) (:y bounds) (:width bounds) (:height bounds))
+        x            (.addCategoryAxis dimple-chart "x" x-axis)
+        y            (.addMeasureAxis dimple-chart "y" y-axis)
+        s            (.addSeries dimple-chart nil plot (clj->js [x y]))]
     (aset s "data" (clj->js data))
     (.addLegend dimple-chart "5%" "10%" "20%" "10%" "right")
     (.draw dimple-chart)))
 
 
-(defn chart-figure [cursor owner]
+(defn chart-figure [cursor owner opts]
   (reify
     om/IWillMount
     (will-mount [_]
-      (let [typed-username (om/get-state owner [:typed])]
+      (let [event-chan (om/get-state owner [:event-chan])
+            event-fn   (:event-fn opts)]
         (go (while true
-              (let [sel (<! typed-username)
-                    {:keys [username]} sel]
-                (get-all-artists cursor owner username))))))
+              (let [v (<! event-chan)]
+                (event-fn cursor owner v))))))
     om/IRender
     (render [_]
       (dom/div nil (dom/div #js {:id "chart" :width "100%" :height 600})))
@@ -75,20 +73,28 @@
       (let [n (.getElementById js/document "chart")]
         (while (.hasChildNodes n)
           (.removeChild n (.-lastChild n))))
-      (when (:artists cursor)
-        (draw-chart cursor)))))
+      (when (:data cursor)
+        (draw-chart cursor (:chart opts))))))
+
+;;;;;;;;;;;;; Entire Application View ;;;;;;;;;;;;;
 
 (defn lastfm-chart [cursor owner]
   (reify
     om/IInitState
     (init-state [_]
-      {:chans {:typed (chan (sliding-buffer 1))}})
+      {:chans {:event-chan (chan (sliding-buffer 1))}})
     om/IRenderState
     (render-state [_ {:keys [chans]}]
       (dom/div nil
                (dom/h3 nil "Last.fm chart")
                (om/build username-box (:username-box cursor) {:init-state chans})
-               (om/build chart-figure (:chart cursor) {:init-state chans})))))
+               (om/build chart-figure (:chart cursor) {:init-state chans
+                                                       :opts {:event-fn get-all-artists
+                                                              :chart {:div {:name "#chart" :width "100%" :height 600}
+                                                                      :bounds {:x "5%" :y "15%" :width "80%" :height "50%"}
+                                                                      :x-axis "name"
+                                                                      :y-axis "playcount"
+                                                                      :plot js/dimple.plot.bar}}})))))
 
 
 

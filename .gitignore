@@ -7,6 +7,7 @@ pom.xml.asc
 /examples/simple-map/out/
 /examples/chart-http/out/
 /examples/lastfm-chart/out/
+/examples/**/*.js
 /target/
 /checkouts/
 .lein-deps-sum

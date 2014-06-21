@@ -6,7 +6,7 @@
 
   :jvm-opts ^:replace ["-Xms512m" "-Xmx512m" "-server"]
 
-  :source-paths  ["src"]
+  :source-paths  ["src" "src-cljs"]
   :ring {:handler om-data-vis.handler/app}
 
   :dependencies [[org.clojure/clojure "1.6.0"]
@@ -38,29 +38,22 @@
   
   :cljsbuild {
     :builds [;; examples
-             {:id "simple-chart"
-              :source-paths ["examples/simple-chart/src"]
-              :compiler {
-                :output-to "examples/simple-chart/simple_chart.js"
-                :output-dir "examples/simple-chart/out"
-                :source-map true
-                :optimizations :none}}
              {:id "chart-http"
-              :source-paths ["examples/chart-http/src"]
+              :source-paths ["src-cljs" "examples/chart-http/src"]
               :compiler {
                 :output-to "examples/chart-http/chart_http.js"
                 :output-dir "examples/chart-http/out"
                 :source-map true
                 :optimizations :none}}
              {:id "simple-map"
-              :source-paths ["examples/simple-map/src"]
+              :source-paths ["src-cljs" "examples/simple-map/src"]
               :compiler {
                          :output-to "examples/simple-map/simple_map.js"
                          :output-dir "examples/simple-map/out"
                          :source-map true
                          :optimizations :none}}
               {:id "lastfm-chart"
-               :source-paths ["examples/lastfm-chart/src"]
+               :source-paths ["src-cljs" "examples/lastfm-chart/src"]
                :compiler {
                           :output-to "examples/lastfm-chart/lastfm_chart.js"
                           :output-dir "examples/lastfm-chart/out"

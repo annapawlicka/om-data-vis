@@ -16,7 +16,8 @@
         s            (.addSeries dimple-chart nil plot (clj->js [x y]))]
     (aset s "data" (clj->js data))
     (.addLegend dimple-chart "5%" "10%" "20%" "10%" "right")
-    (.draw dimple-chart)))
+    (.draw dimple-chart)
+    (.attr (.selectAll (.-shapes x) "text") "transform" "rotate(45,0,12.6015625) translate(5, 0)")))
 
 (defn chart-figure [cursor owner {:keys [chart] :as opts}]
   (reify

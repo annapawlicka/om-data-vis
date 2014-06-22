@@ -34,10 +34,11 @@
    (dom/section nil
                 (dom/h3 nil "Coordinates")
                 (dom/p nil "(Click anywhere on a map)")
-                (when cursor
-                  (dom/div nil
-                           (dom/label nil (str "Lat: " (.-lat cursor)))
-                           (dom/label nil (str "Lng: " (.-lng cursor))))))))
+                (dom/div #js {:className "well" :style #js {:width "100%" :height 70}}
+                         (when cursor
+                           (dom/div nil
+                                    (dom/label nil (str "Lat: " (.-lat cursor)))
+                                    (dom/label nil (str "Lng: " (.-lng cursor)))))))))
 
 (defn pan-to-postcode [cursor owner]
   (let [postcode (.toUpperCase (string/replace (om/get-state owner :postcode) #"[\s]+" ""))]
@@ -61,18 +62,23 @@
     (render-state [_ state]
       (dom/section nil
                    (dom/h3 nil "Zoom to postcode")
-                   (dom/input #js {:type "text"
-                                   :defaultValue  (:initialPostCode state)
-                                   :onChange (fn [e]
-                                               (om/set-state! owner :postcode (.-value (.-target e))))
-                                   :onKeyPress (fn [e] (when (= (.-keyCode e) 13)
-                                                         (pan-to-postcode cursor owner)))})
-                   (dom/button #js {:onClick (fn [_] (pan-to-postcode cursor owner))} "Go")))))
+                   (dom/div #js {:className "form-inline" :role "form"}
+                            (dom/div #js {:className "form-group"}
+                                     (dom/input #js {:type "text"
+                                                     :className "form-control"
+                                                     :style #js {:width "100%"}
+                                                     :defaultValue  (:initialPostCode state)
+                                                     :onChange (fn [e]
+                                                                 (om/set-state! owner :postcode (.-value (.-target e))))
+                                                     :onKeyPress (fn [e] (when (= (.-keyCode e) 13)
+                                                                           (pan-to-postcode cursor owner)))}))
+                            (dom/button #js {:type "button" :className "btn btn-primary"  :style #js {:width "20%"}
+                                             :onClick (fn [_] (pan-to-postcode cursor owner))} "Go"))))))
 
 (defn panel-component
   [cursor owner]
   (om/component
-   (dom/div nil        
+   (dom/div nil     
             (om/build postcode-component cursor)
             (om/build coordinates-component (:coordinates cursor)))))
 
@@ -81,7 +87,8 @@
   [cursor map latlng]
   (let [marker (-> (.addTo (.marker js/L (clj->js latlng)) map))]
     (om/update! cursor [:coordinates] latlng)
-    (.on marker "click" (fn [e] (.removeLayer map marker)))))
+    (.on marker "click" (fn [e] (.removeLayer map marker)
+                          (om/update! cursor [:coordinates] nil)))))
 
 (defn map-component
   [cursor owner]

@@ -48,7 +48,7 @@
     (render-state [_ {:keys [event-chan]}]
       (let [devices (:all cursor)]
         (dom/div nil
-                 (dom/table #js {:cellSpacing "10"}
+                 (dom/table #js {:className "table table-striped table-bordered table-condensed" :style #js {:width "100%"}}
                             (dom/thead nil (dom/tr nil
                                                    (dom/th nil "Select")
                                                    (dom/th nil "ID")
@@ -68,19 +68,24 @@
     om/IRenderState
     (render-state [_ {:keys [chans]}]
       (dom/div nil
-           (dom/h3 #js {:key "head"} (str "Metering data"))
-           ;; Builds table with form components for selecting devices
-           (dom/div #js {:id "device-form"}
-                (om/build device-form (:devices cursor)
-                    {:init-state chans}))
-           ;; Builds chart component
-           (om/build chart/chart-figure (:chart cursor) {:init-state chans
-                                                   :opts {:event-fn get-measurements
-                                                          :chart {:div {:id "chart" :width "100%" :height 600}
-                                                                  :bounds {:x "5%" :y "15%" :width "80%" :height "50%"}
-                                                                  :x-axis "timestamp"
-                                                                  :y-axis "value"
-                                                                  :plot js/dimple.plot.line}}})))))
+               (dom/div #js {:className "container"}
+                        (dom/h3 #js {:key "head"} (str "Metering data"))
+                        ;; Builds table with form components for selecting devices
+                        (om/build device-form (:devices cursor)
+                                  {:init-state chans})
+                        ;; Builds chart component
+                        (dom/div #js {:className "well" :style #js {:width "100%" :height 600}}
+                                 (om/build chart/chart-figure 
+                                           (:chart cursor) 
+                                           {:init-state chans
+                                            :opts {:event-fn get-measurements
+                                                   :chart {:div {:id "chart" :width
+                                                                 "100%" :height 600}
+                                                           :bounds {:x "5%" :y "15%" 
+                                                                    :width "80%" :height "50%"}
+                                                           :x-axis "timestamp"
+                                                           :y-axis "value"
+                                                           :plot js/dimple.plot.line}}})))))))
 
 (om/root chart-http app-model
   {:target (.getElementById js/document "app")

@@ -4,15 +4,16 @@
             [om.dom  :as dom :include-macros true]
             [cljs.core.async :refer [<! chan put! sliding-buffer]]
             [ajax.core :refer (GET)]
-            [clojure.string :as string]))
+            [clojure.string :as string]
+            [om-data-vis.forms :as forms]))
 
 (enable-console-print!)
 
 (def app-model
   (atom
-   {:leaflet-map nil
-    :coordinates nil
-    :map {:lat 50.06297958283694 :lng 19.94705200195313}}))
+   {:map {:leaflet-map nil
+          :map {:lat 50.06297958283694 :lng 19.94705200195313}}
+    :panel {:coordinates nil}}))
 
 (def tile-url "http://{s}.tile.osm.org/{z}/{x}/{y}.png")
 
@@ -40,8 +41,8 @@
                                     (dom/label nil (str "Lat: " (.-lat cursor)))
                                     (dom/label nil (str "Lng: " (.-lng cursor)))))))))
 
-(defn pan-to-postcode [cursor owner]
-  (let [postcode (.toUpperCase (string/replace (om/get-state owner :postcode) #"[\s]+" ""))]
+(defn pan-to-postcode [cursor owner postcode]
+  (let [postcode (.toUpperCase (string/replace postcode #"[\s]+" ""))]
     (GET (str "http://maps.googleapis.com/maps/api/geocode/json?address=" postcode)
         {:handler (fn [body]
                     (let [map    (:leaflet-map @cursor)
@@ -49,50 +50,45 @@
                       (.panTo map (clj->js {:lat (js/parseFloat (get-in latlng ["lat"]))
                                             :lng (js/parseFloat (get-in latlng ["lng"]))}))))})))
 
-(defn postcode-component
-  [cursor owner]
-  (reify
-    om/IInitState
-    (init-state [_]
-      {:initialPostCode "30-302 Krakow"})
-    om/IWillMount
-    (will-mount [_]
-      (om/set-state! owner :postcode (om/get-state owner :initialPostCode)))
-    om/IRenderState
-    (render-state [_ state]
-      (dom/section nil
-                   (dom/h3 nil "Zoom to postcode")
-                   (dom/div #js {:className "form-inline" :role "form"}
-                            (dom/div #js {:className "form-group"}
-                                     (dom/input #js {:type "text"
-                                                     :className "form-control"
-                                                     :style #js {:width "100%"}
-                                                     :defaultValue  (:initialPostCode state)
-                                                     :onChange (fn [e]
-                                                                 (om/set-state! owner :postcode (.-value (.-target e))))
-                                                     :onKeyPress (fn [e] (when (= (.-keyCode e) 13)
-                                                                           (pan-to-postcode cursor owner)))}))
-                            (dom/button #js {:type "button" :className "btn btn-primary"  :style #js {:width "20%"}
-                                             :onClick (fn [_] (pan-to-postcode cursor owner))} "Go"))))))
+(defn drop-pin 
+  "Drop pin on click and removes it when it's clicked again."
+  [owner map latlng]
+  (let [marker (-> (.addTo (.marker js/L (clj->js latlng)) map))
+        pin-chan (om/get-state owner [:pin-chan])]
+    (put! pin-chan {:action :put :coordinates latlng})
+
+    (.on marker "click" (fn [e] (.removeLayer map marker)
+                          (put! pin-chan {:action :remove})))))
 
 (defn panel-component
   [cursor owner]
-  (om/component
-   (dom/div nil     
-            (om/build postcode-component cursor)
-            (om/build coordinates-component (:coordinates cursor)))))
-
-(defn drop-pin 
-  "Drop pin on click and removes it when it's clicked again."
-  [cursor map latlng]
-  (let [marker (-> (.addTo (.marker js/L (clj->js latlng)) map))]
-    (om/update! cursor [:coordinates] latlng)
-    (.on marker "click" (fn [e] (.removeLayer map marker)
-                          (om/update! cursor [:coordinates] nil)))))
+  (reify
+    om/IWillMount
+    (will-mount [_]
+      (let [pin-chan (om/get-state owner [:pin-chan])]
+        (go (while true
+              (let [{:keys [action coordinates]} (<! pin-chan)]
+                (if (= action :put)
+                  (om/update! cursor [:coordinates] coordinates)
+                  (om/update! cursor [:coordinates] nil)))))))
+    om/IRender
+    (render [_]
+      (let [event-chan (om/get-state owner [:event-chan])]
+        (dom/div #js {:id "panel"}  
+                 (dom/h3 nil "Postcode lookup")
+                 (om/build forms/input-box cursor
+                           {:init-state {:event-chan event-chan}})
+                 (om/build coordinates-component (:coordinates cursor)))))))
 
 (defn map-component
   [cursor owner]
   (reify
+    om/IWillMount
+    (will-mount [_]
+      (let [event-chan (om/get-state owner [:event-chan])]
+        (go (while true
+              (let [v (<! event-chan)]
+                (pan-to-postcode cursor owner v))))))
     om/IRender
     (render [this]
       (dom/div #js {:id "map"}))
@@ -104,10 +100,22 @@
                  :lat (get-in cursor [:map :lat])}]
         (.on leaflet-map "click" (fn [e]
                                    (let [latlng (.-latlng e)]
-                                     (drop-pin cursor leaflet-map latlng))))
+                                     (drop-pin owner leaflet-map latlng))))
         (.panTo leaflet-map (clj->js loc))
         (om/update! cursor :leaflet-map leaflet-map)))))
 
+(defn geocoded-map
+  [cursor owner]
+  (reify
+    om/IInitState
+    (init-state [_]
+      {:chans {:event-chan (chan (sliding-buffer 1))
+               :pin-chan (chan (sliding-buffer 1))}})
+    om/IRenderState
+    (render-state [_ {:keys [chans]}]
+      (dom/div nil
+              (om/build map-component (:map cursor) {:init-state chans})
+              (om/build panel-component (:panel cursor) {:init-state chans})))))
 
-(om/root map-component app-model {:target (. js/document (getElementById "app"))})
-(om/root panel-component app-model {:target (. js/document (getElementById "panel"))})
+
+(om/root geocoded-map app-model {:target (. js/document (getElementById "app"))})

@@ -23,9 +23,6 @@
                  [compojure "1.1.6"]
                  [org.clojure/data.json "0.2.5"]
 
-                 ;; Database
-                 [cc.qbits/alia "2.0.0-rc3"]
-
                  [org.clojure/tools.reader "0.8.3"]
                  ]
 

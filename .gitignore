@@ -8,6 +8,7 @@ pom.xml.asc
 /examples/chart-http/out/
 /examples/lastfm-chart/out/
 /examples/**/*.js
+/examples/*.js
 /target/
 /checkouts/
 .lein-deps-sum
@@ -16,4 +17,4 @@ pom.xml.asc
 .lein-failures
 .DS_Store
 .DS_Store?
-/examples/lastfm-chart/src/api.cljs
+examples/lastfm-chart/src/api.cljs

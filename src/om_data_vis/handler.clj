@@ -4,29 +4,41 @@
             [compojure.route :as route]
             [liberator.core :refer [resource defresource]]
             [liberator.representation :refer (ring-response as-response)]
-            [qbits.alia :as alia]
-            [qbits.hayt :as hayt]
+            [clojure.java.io :as io]
             [clojure.data.json :as json]))
 
+;; Data - for quick demo only. Should be replaced with database, CSV, etc. ;;
+(def data {:devices [{:id "01"
+                      :type "electricityConsumption"
+                      :description "I'm a device with id 01"
+                      :unit "kWh"}
+                     {:id "02"
+                      :type "gasConsumption"
+                      :description "I'm a device with id 02"
+                      :unit "kWh"}]
+           :measurements [{:id "01" :type "electricityConsumption" :timestamp "01/01/2011" :value 0.8}
+                          {:id "01" :type "electricityConsumption" :timestamp "01/02/2011" :value 0.9}
+                          {:id "01" :type "electricityConsumption" :timestamp "01/03/2011" :value 0.8}
+                          {:id "01" :type "electricityConsumption" :timestamp "01/04/2011" :value 0.75}
+                          {:id "01" :type "electricityConsumption" :timestamp "01/05/2011" :value 0.65}
+                          {:id "02" :type "gasConsumption" :timestamp "01/01/2011" :value 6}
+                          {:id "02" :type "gasConsumption" :timestamp "01/02/2011" :value 10}
+                          {:id "02" :type "gasConsumption" :timestamp "01/03/2011" :value 12}
+                          {:id "02" :type "gasConsumption" :timestmap "01/04/2011" :value 15}
+                          {:id "02" :type "gasConsumption" :timestamp "01/05/2011" :value 18}]})
 
-(def cluster (alia/cluster {:contact-points ["localhost"] :port 9042}))
 
 (defn retrieve-measurements [id type ctx]
-  (let [session (alia/connect cluster :demo)
-        measurements (alia/execute session (hayt/select :measurements (hayt/where [[= :device_id id]
-                                                                                   [= :type type]])))]
+  (let [measurements  (filter #(and (= (:id %) id) (= (:type %) type)) (get-in data [:measurements]))]
      (when measurements
-       (-> (as-response (map #(-> %
-                                  (update-in [:value] read-string)
-                                  (update-in [:timestamp] str)) measurements) ctx)
+       (-> (as-response measurements ctx)
            (assoc-in [:headers "Access-Control-Allow-Origin"] "*")
            (assoc-in [:headers "Access-Control-Allow-Headers"] "X-Requested-With")
            (assoc-in [:headers "Access-Control-Allow-Methods"] "*")
            (ring-response)))))
 
 (defn retrieve-devices [ctx]
-  (let [session (alia/connect cluster :demo)
-        devices (alia/execute session (hayt/select :devices))]
+  (let [devices (get-in data [:devices])]
     (-> (as-response devices ctx)
         (assoc-in [:headers "Access-Control-Allow-Origin"] "*")
         (assoc-in [:headers "Access-Control-Allow-Headers"] "X-Requested-With")
@@ -48,6 +60,8 @@
   (GET "/" [] "Hello World")
   (ANY "/device/:id/type/:type/measurements/" [id type] (measurements-resource id type))
   (ANY "/devices/" [] devices-resource)
+
+  (GET "/chart_http" [] {:status 200 :body (slurp (io/resource "chart-http/index.html"))})
   (route/not-found "Not Found"))
 
 

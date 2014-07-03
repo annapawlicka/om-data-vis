@@ -61,7 +61,9 @@
   (ANY "/device/:id/type/:type/measurements/" [id type] (measurements-resource id type))
   (ANY "/devices/" [] devices-resource)
 
-  (GET "/chart_http" [] {:status 200 :body (slurp (io/resource "chart-http/index.html"))})
+  (route/files "/examples" {:root "examples"})
+  (route/files "/css" {:root "css"})
+  (route/files "/js" {:root "js"})
   (route/not-found "Not Found"))
 
 

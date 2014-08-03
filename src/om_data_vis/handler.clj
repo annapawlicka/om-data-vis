@@ -27,6 +27,13 @@
                           {:id "02" :type "gasConsumption" :timestmap "01/04/2011" :value 15}
                           {:id "02" :type "gasConsumption" :timestamp "01/05/2011" :value 18}]})
 
+(defn retrieve-api-key [ctx]
+  (let [api-key (slurp (io/resource "lastfm.edn"))]
+    (-> (as-response api-key ctx)
+        (assoc-in [:headers "Access-Control-Allow-Origin"] "*")
+        (assoc-in [:headers "Access-Control-Allow-Headers"] "X-Requested-With")
+        (assoc-in [:headers "Access-Control-Allow-Methods"] "*")
+        (ring-response))))
 
 (defn retrieve-measurements [id type ctx]
   (let [measurements  (filter #(and (= (:id %) id) (= (:type %) type)) (get-in data [:measurements]))]
@@ -56,10 +63,17 @@
   :available-media-types #{"application/edn"}
   :handle-ok retrieve-devices)
 
+(defresource api-key [_]
+  :allowed-methods #{:get}
+  :known-content-type? #{"application/edn"}
+  :available-media-types #{"application/edn"}
+  :handle-ok retrieve-api-key)
+
 (defroutes app-routes
   (GET "/" [] "Hello World")
   (ANY "/device/:id/type/:type/measurements/" [id type] (measurements-resource id type))
   (ANY "/devices/" [] devices-resource)
+  (GET "/apikey/" [] api-key)
 
   (route/files "/examples" {:root "examples"})
   (route/files "/css" {:root "css"})

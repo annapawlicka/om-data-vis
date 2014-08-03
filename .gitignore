@@ -17,4 +17,3 @@ pom.xml.asc
 .lein-failures
 .DS_Store
 .DS_Store?
-examples/lastfm-chart/src/api.cljs

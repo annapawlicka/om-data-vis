@@ -14,17 +14,16 @@
 
                  ;; Om components
                  [org.clojure/core.async "0.1.267.0-0d7780-alpha" :scope "provided"]
-                 [om "0.5.1"]
-                 [net.drib/mrhyde "0.5.3"]
+                 [om "0.7.0"]
+                 [sablono "0.2.20"]
                  [cljs-ajax "0.2.6"]
 
                  ;; Routes and resources
-                 [liberator "0.11.0"]
-                 [compojure "1.1.6"]
+                 [liberator "0.12.0"]
+                 [compojure "1.1.8"]
                  [org.clojure/data.json "0.2.5"]
 
-                 [org.clojure/tools.reader "0.8.3"]
-                 ]
+                 [org.clojure/tools.reader "0.8.3"]]
 
   :plugins [[lein-cljsbuild "1.0.4-SNAPSHOT"]
             [lein-ring "0.8.10"]]

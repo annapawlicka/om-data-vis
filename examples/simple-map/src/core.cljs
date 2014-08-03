@@ -1,11 +1,11 @@
 (ns examples.simple-map.core
   (:require-macros [cljs.core.async.macros :refer [go go-loop]])
   (:require [om.core :as om  :include-macros true]
-            [om.dom  :as dom :include-macros true]
             [cljs.core.async :refer [<! chan put! sliding-buffer]]
             [ajax.core :refer (GET)]
             [clojure.string :as string]
-            [om-data-vis.forms :as forms]))
+            [om-data-vis.forms :as forms]
+            [sablono.core :as html :refer-macros [html]]))
 
 (enable-console-print!)
 
@@ -32,14 +32,15 @@
 
 (defn coordinates-component [cursor owner]
   (om/component
-   (dom/section nil
-                (dom/h3 nil "Coordinates")
-                (dom/p nil "(Click anywhere on a map)")
-                (dom/div #js {:className "well" :style #js {:width "100%" :height 70}}
-                         (when cursor
-                           (dom/div nil
-                                    (dom/label nil (str "Lat: " (.-lat cursor)))
-                                    (dom/label nil (str "Lng: " (.-lng cursor)))))))))
+   (html
+    [:section
+     [:h3 "Coordinates"]
+     [:p "(Click anywhere on a map)"]
+     [:div {:class "well" :style #js {:width "100%" :height 70}}
+      (when cursor
+        [:div
+         [:label (str "Lat: " (.-lat cursor))]
+         [:label (str "Lng: " (.-lng cursor))]])]])))
 
 (defn pan-to-postcode [cursor owner postcode]
   (let [postcode (.toUpperCase (string/replace postcode #"[\s]+" ""))]
@@ -74,11 +75,13 @@
     om/IRender
     (render [_]
       (let [event-chan (om/get-state owner [:event-chan])]
-        (dom/div #js {:id "panel"}  
-                 (dom/h3 nil "Postcode lookup")
-                 (om/build forms/input-box cursor
-                           {:init-state {:event-chan event-chan}})
-                 (om/build coordinates-component (:coordinates cursor)))))))
+        (html
+         [:div {:id "panel"}  
+          [:h3 "Postcode lookup"]
+          (om/build forms/input-box cursor
+                    {:init-state {:event-chan event-chan}
+                     :opts {:default-value "Krakow"}})
+          (om/build coordinates-component (:coordinates cursor))])))))
 
 (defn map-component
   [cursor owner]
@@ -91,7 +94,8 @@
                 (pan-to-postcode cursor owner v))))))
     om/IRender
     (render [this]
-      (dom/div #js {:id "map"}))
+      (html
+       [:div {:id "map"}]))
     om/IDidMount
     (did-mount [this]
       (let [node (om/get-node owner)
@@ -113,9 +117,10 @@
                :pin-chan (chan (sliding-buffer 1))}})
     om/IRenderState
     (render-state [_ {:keys [chans]}]
-      (dom/div nil
-              (om/build map-component (:map cursor) {:init-state chans})
-              (om/build panel-component (:panel cursor) {:init-state chans})))))
+      (html
+       [:div
+        (om/build map-component (:map cursor) {:init-state chans})
+        (om/build panel-component (:panel cursor) {:init-state chans})]))))
 
 
 (om/root geocoded-map app-model {:target (. js/document (getElementById "app"))})

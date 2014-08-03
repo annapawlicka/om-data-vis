@@ -1,9 +1,9 @@
 (ns om-data-vis.chart
   (:require-macros [cljs.core.async.macros :refer [go go-loop]])
   (:require [om.core :as om  :include-macros true]
-            [om.dom  :as dom :include-macros true]
             [cljs.core.async :refer [<! chan put! sliding-buffer]]
-            [ajax.core :refer (GET)]))
+            [ajax.core :refer (GET)]
+            [sablono.core :as html :refer-macros [html]]))
 
 (defn- draw-chart [cursor {:keys [div bounds x-axis y-axis plot]}]
   (let [{:keys [id width height]} div
@@ -31,11 +31,12 @@
     om/IRender
     (render [_]
       (let [{:keys [id width height]} (:div chart)]
-        (dom/div #js {:id id :width width :height height})))
+        (html
+         [:div {:id id :width width :height height}])))
     om/IDidUpdate
     (did-update [_ _ _]
       (let [n (.getElementById js/document "chart")]
         (while (.hasChildNodes n)
           (.removeChild n (.-lastChild n))))
-      (when (:data cursor)
+      (when (seq (:data cursor))
         (draw-chart cursor chart)))))

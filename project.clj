@@ -31,7 +31,7 @@
   :profiles {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]
                                   [ring-mock "0.1.5"]]}}
 
-  
+
   :cljsbuild {
     :builds [;; examples
              {:id "chart-http"
@@ -53,5 +53,12 @@
                :compiler {
                           :output-to "examples/lastfm-chart/lastfm_chart.js"
                           :output-dir "examples/lastfm-chart/out"
+                          :source-map true
+                          :optimizations :none}}
+              {:id "draggable-widget"
+               :source-paths ["src-cljs" "examples/draggable-widget/src"]
+               :compiler {
+                          :output-to "examples/draggable-widget/draggable_widget.js"
+                          :output-dir "examples/draggable-widget/out"
                           :source-map true
                           :optimizations :none}}]})

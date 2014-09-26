@@ -10,19 +10,22 @@
 
 (defn handle-drag-event [cursor owner evt-type e]
   (when (= evt-type :down)
-    (om/set-state! owner :pressed true))
+    (om/set-state! owner :mouse {:offset-top (.-offsetY e)
+                                 :offset-left (.-offsetX e)
+                                 :pressed true}))
   (when (= evt-type :up)
-    (om/set-state! owner :pressed false))
-  (when (and (= evt-type :move) (om/get-state owner :pressed))
-    (om/update! cursor :position {:top (.-clientY e) :left (.-clientX e)})))
-
+    (om/set-state! owner [:mouse :pressed] false))
+  (when (and (= evt-type :move) (om/get-state owner [:mouse :pressed]))
+    (let [{:keys [offset-top offset-left]} (om/get-state owner :mouse)]
+      (om/update! cursor :position {:top (- (.-clientY e) offset-top)
+                                    :left (- (.-clientX e) offset-left)}))))
 
 (defn draggable [cursor owner {:keys [build-fn id]}]
   (reify
     om/IInitState
     (init-state [_]
       {:mouse-chan (chan (sliding-buffer 1000))
-       :pressed false})
+       :mouse {:offset-top 0 :offset-left 0 :pressed false}})
     om/IWillMount
     (will-mount [_]
       (let [mouse-chan (om/get-state owner :mouse-chan)]
@@ -42,6 +45,6 @@
       (html
        (let [{:keys [top left]} (:position cursor)]
          [:div {:id id
-                :style {:top (str (- top 40) "px") :left (str (- left 40) "px")
+                :style {:top (str top "px") :left (str left "px")
                         :position "absolute" :z-index 100}}
           build-fn])))))

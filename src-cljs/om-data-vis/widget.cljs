@@ -17,7 +17,7 @@
     (om/update! cursor :position {:top (.-clientY e) :left (.-clientX e)})))
 
 
-(defn draggable [cursor owner {:keys [build-fn id]}]
+(defn draggable [cursor owner {:keys [component id]}]
   (reify
     om/IInitState
     (init-state [_]
@@ -44,4 +44,4 @@
          [:div {:id id
                 :style {:top (str (- top 40) "px") :left (str (- left 40) "px")
                         :position "absolute" :z-index 100}}
-          build-fn])))))
+          (om/build component cursor)])))))

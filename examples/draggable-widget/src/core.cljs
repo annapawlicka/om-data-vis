@@ -34,9 +34,9 @@
       (html
        [:div {:class "container"}
         (om/build w/draggable (:draggable-box cursor) {:opts {:id "box-widget"
-                                                              :build-fn (om/build box (:draggable-box cursor))}})
+                                                              :component box}})
         (om/build w/draggable (:draggable-circle cursor) {:opts {:id "circle-widget"
-                                                                 :build-fn (om/build circle (:draggable-circle cursor))}})]))))
+                                                                 :component circle}})]))))
 
 (om/root draggable-widget app-model
   {:target (.getElementById js/document "app")})

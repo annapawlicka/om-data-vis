@@ -1,7 +1,7 @@
 om-data-vis
 ===========
 
-Data visualisations using Om and JavaScript libraries
+Repo with basic data visualisations based on Om and JavaScript libraries that I used as demo at EuroClojure 2014. Will probably add more examples as needed.
 
  - Chart-http: dimple.js + core.async + Om + compojure + liberator
  - lastfm-chart: dimple.js + last.fm API + core.async

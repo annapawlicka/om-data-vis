@@ -16,8 +16,9 @@
   (when (and (= evt-type :move) (om/get-state owner :pressed))
     (om/update! cursor :position {:top (.-clientY e) :left (.-clientX e)})))
 
+(enable-console-print!)
 
-(defn draggable [cursor owner {:keys [component id]}]
+(defn draggable [cursor owner]
   (reify
     om/IInitState
     (init-state [_]
@@ -32,16 +33,16 @@
           (recur))))
     om/IDidMount
     (did-mount [_]
-      (let [node       (by-id id)
+      (let [node       (by-id (om/get-state owner :id))
             mouse-chan (om/get-state owner :mouse-chan)]
         (events/listen node "mousemove" #(put! mouse-chan [:move %]))
         (events/listen node "mousedown" #(put! mouse-chan [:down %]))
         (events/listen node "mouseup" #(put! mouse-chan [:up %]))))
     om/IRenderState
-    (render-state [_ {:keys [mouse-chan]}]
+    (render-state [_ {:keys [mouse-chan id figure]}]
       (html
        (let [{:keys [top left]} (:position cursor)]
          [:div {:id id
                 :style {:top (str (- top 40) "px") :left (str (- left 40) "px")
                         :position "absolute" :z-index 100}}
-          (om/build component cursor)])))))
+          figure])))))
